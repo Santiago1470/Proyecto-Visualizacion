@@ -2,3 +2,5 @@
 .venv/etc/jupyter/nbconfig/notebook.d/
 
 .venv/
+
+__pycache__/

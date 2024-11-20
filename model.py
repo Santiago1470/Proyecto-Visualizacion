@@ -28,79 +28,77 @@ class Database:
         # Dimensión Temporal
         self.cursor.execute('''
         CREATE TABLE IF NOT EXISTS DimensionTemporal (
-            IdTiempo INTEGER PRIMARY KEY,
-            Anio INTEGER,
-            Semestre INTEGER
+            idTiempo INTEGER PRIMARY KEY,
+            anio INTEGER,
+            semestre INTEGER
         )
         ''')
 
         # Dimensión Estudiantes
         self.cursor.execute('''
         CREATE TABLE IF NOT EXISTS DimensionEstudiantes (
-            IdEstudiante INTEGER PRIMARY KEY,
-            Genero TEXT
+            idEstudiante INTEGER PRIMARY KEY,
+            genero TEXT
         )
         ''')
 
         # Dimensión Académica
         self.cursor.execute('''
         CREATE TABLE IF NOT EXISTS DimensionAcademica (
-            IdAcademico INTEGER PRIMARY KEY,
-            NivelEducativo TEXT,
-            AreaConocimiento TEXT,
-            Modalidad TEXT
+            idAcademico INTEGER PRIMARY KEY,
+            nivelEducativo TEXT,
+            programaAcademico TEXT,
+            modalidad TEXT
         )
         ''')
 
         # Dimensión Institución
         self.cursor.execute('''
         CREATE TABLE IF NOT EXISTS DimensionInstitucion (
-            IdInstitucion INTEGER PRIMARY KEY,
-            NombreInstitucion TEXT,
-            TipoInstitucion TEXT
+            idInstitucion INTEGER PRIMARY KEY,
+            nombreInstitucion TEXT,
+            tipoInstitucion TEXT,
+            idInstitucionDpto INTEGER,
+            FOREIGN KEY (idInstitucionDpto) REFERENCES DimensionDepartamento(idDepartamento)
         )
         ''')
 
         # Dimensión Departamento
         self.cursor.execute('''
         CREATE TABLE IF NOT EXISTS DimensionDepartamento (
-            IdDepartamento INTEGER PRIMARY KEY,
-            NombreDepartamento TEXT,
-            CodigoDepartamento TEXT
+            idDepartamento INTEGER PRIMARY KEY,
+            nombreDepartamento TEXT,
+            codigoDepartamento TEXT
         )
         ''')
 
         # Dimensión Municipio
         self.cursor.execute('''
         CREATE TABLE IF NOT EXISTS DimensionMunicipio (
-            IdMunicipio INTEGER PRIMARY KEY,
-            NombreMunicipio TEXT,
-            CodigoMunicipio TEXT,
-            IdDepartamento INTEGER,
-            FOREIGN KEY (IdDepartamento) REFERENCES DimensionDepartamento(IdDepartamento)
+            idMunicipio INTEGER PRIMARY KEY,
+            nombreMunicipio TEXT,
+            codigoMunicipio TEXT,
+            idMunicipioDpto INTEGER,
+            FOREIGN KEY (idMunicipioDpto) REFERENCES DimensionDepartamento(idDepartamento)
         )
         ''')
 
         # Tabla de Hechos
         self.cursor.execute('''
         CREATE TABLE IF NOT EXISTS TablaHechosSNIES (
-            IdHecho INTEGER PRIMARY KEY,
-            IdTiempo INTEGER,
-            IdEstudiante INTEGER,
-            IdAcademico INTEGER,
-            IdInstitucion INTEGER,
-            IdDepartamento INTEGER,
-            IdMunicipio INTEGER,
-            CantidadInscritos INTEGER,
-            CantidadAdmitidos INTEGER,
-            CantidadMatriculados INTEGER,
-            CantidadGraduados INTEGER,
-            FOREIGN KEY (IdTiempo) REFERENCES DimensionTemporal(IdTiempo),
-            FOREIGN KEY (IdEstudiante) REFERENCES DimensionEstudiantes(IdEstudiante),
-            FOREIGN KEY (IdAcademico) REFERENCES DimensionAcademica(IdAcademico),
-            FOREIGN KEY (IdInstitucion) REFERENCES DimensionInstitucion(IdInstitucion),
-            FOREIGN KEY (IdDepartamento) REFERENCES DimensionDepartamento(IdDepartamento),
-            FOREIGN KEY (IdMunicipio) REFERENCES DimensionMunicipio(IdMunicipio)
+            idHecho INTEGER PRIMARY KEY,
+            idTiempo INTEGER,
+            idEstudiante INTEGER,
+            idAcademico INTEGER,
+            idInstitucion INTEGER,
+            inscritos INTEGER,
+            admitidos INTEGER,
+            matriculados INTEGER,
+            graduados INTEGER,
+            FOREIGN KEY (idTiempo) REFERENCES DimensionTemporal(idTiempo),
+            FOREIGN KEY (idEstudiante) REFERENCES DimensionEstudiantes(idEstudiante),
+            FOREIGN KEY (idAcademico) REFERENCES DimensionAcademica(idAcademico),
+            FOREIGN KEY (idInstitucion) REFERENCES DimensionInstitucion(idInstitucion)
         )
         ''')
 
@@ -128,38 +126,53 @@ class Database:
         self.connect()
         for _, row in df.iterrows():
             # Insertar en las tablas dimensionales
+            
+            departamento_data = {
+                'nombreDepartamento': row['DEPARTAMENTO DE OFERTA DEL PROGRAMA'],
+                'codigoDepartamento': row['CÓDIGO DEL DEPARTAMENTO (PROGRAMA)']
+            }
+            id_departamento = self.insert_dimension_data(self.cursor, 'DimensionDepartamento', departamento_data)
+            
             institucion_data = {
-                'NombreInstitucion': row['INSTITUCIÓN DE EDUCACIÓN SUPERIOR (IES)'],
-                'TipoInstitucion': row['CARÁCTER IES']
+                'nombreInstitucion': row['INSTITUCIÓN DE EDUCACIÓN SUPERIOR (IES)'],
+                'tipoInstitucion': row['CARÁCTER IES'],
+                'idInstitucionDpto': id_departamento
             }
             id_institucion = self.insert_dimension_data(self.cursor, 'DimensionInstitucion', institucion_data)
 
+            municipio_data = {
+                'nombreMunicipio': row['MUNICIPIO DE OFERTA DEL PROGRAMA'],
+                'codigoMunicipio': row['CÓDIGO DEL MUNICIPIO (PROGRAMA)'],
+                'idMunicipioDpto': id_departamento
+            }
+            id_municipio = self.insert_dimension_data(self.cursor, 'DimensionMunicipio', municipio_data)
+
             tiempo_data = {
-                'Anio': row['AÑO'],
-                'Semestre': row['SEMESTRE']
+                'anio': row['AÑO'],
+                'semestre': row['SEMESTRE']
             }
             id_tiempo = self.insert_dimension_data(self.cursor, 'DimensionTemporal', tiempo_data)
 
-            estudiante_data = {'Genero': row['ID SEXO']}
+            estudiante_data = {'Genero': row['SEXO']}
             id_estudiante = self.insert_dimension_data(self.cursor, 'DimensionEstudiantes', estudiante_data)
 
             academica_data = {
-                'NivelEducativo': row['NIVEL ACADÉMICO'],
-                'AreaConocimiento': row['ÁREA DE CONOCIMIENTO'],
-                'Modalidad': row['MODALIDAD']
+                'nivelEducativo': row['NIVEL ACADÉMICO'],
+                'programaAcademico': row['PROGRAMA ACADÉMICO'],
+                'modalidad': row['MODALIDAD']
             }
             id_academico = self.insert_dimension_data(self.cursor, 'DimensionAcademica', academica_data)
 
             # Insertar en la tabla de hechos
             hechos_data = {
-                'IdTiempo': id_tiempo,
-                'IdEstudiante': id_estudiante,
-                'IdAcademico': id_academico,
-                'IdInstitucion': id_institucion,
-                'CantidadInscritos': row.get('INSCRITOS', 0),
-                'CantidadAdmitidos': row.get('ADMITIDOS', 0),
-                'CantidadMatriculados': row.get('MATRICULADOS', 0),
-                'CantidadGraduados': row.get('GRADUADOS', 0)
+                'idTiempo': id_tiempo,
+                'idEstudiante': id_estudiante,
+                'idAcademico': id_academico,
+                'idInstitucion': id_institucion,
+                'inscritos': row.get('INSCRITOS', 0),
+                'admitidos': row.get('ADMITIDOS', 0),
+                'matriculados': row.get('MATRICULADOS', 0),
+                'graduados': row.get('GRADUADOS', 0)
             }
             placeholders = ','.join(['?' for _ in hechos_data])
             columns = ','.join(hechos_data.keys())
@@ -194,8 +207,14 @@ class Cargue:
             'CÓDIGO DE LA INSTITUCIÓN',
             'INSTITUCIÓN DE EDUCACIÓN SUPERIOR (IES)',
             'CARÁCTER IES',
-            'ÁREA DE CONOCIMIENTO',
+            'PROGRAMA ACADÉMICO',
             'NIVEL ACADÉMICO',
+            'MODALIDAD',
+            'CÓDIGO DEL DEPARTAMENTO (PROGRAMA)',
+            'DEPARTAMENTO DE OFERTA DEL PROGRAMA',
+            'CÓDIGO DEL MUNICIPIO (PROGRAMA)',
+            'MUNICIPIO DE OFERTA DEL PROGRAMA',
+            'SEXO',
             'AÑO',
             'SEMESTRE'
         ]
