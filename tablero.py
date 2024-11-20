@@ -11,10 +11,8 @@ app = dash.Dash(__name__, external_stylesheets=['https://codepen.io/chriddyp/pen
 
 def get_db_connection():
     # Conexión a la base de datos
-    conn = sqlite3.connect('snies.db')  # Asegúrate de tener la base en la ruta correcta
+    conn = sqlite3.connect('snies.db')
     return conn
-
-# Consultas SQL ajustadas al esquema de la base de datos
 
 cantidadesPrograma = """
     SELECT 
@@ -158,8 +156,7 @@ app.layout = html.Div([
     
     # Tabla
     html.Div([
-    html.H1("Visualización de Datos Educativos", style={'textAlign': 'center'}),
-    # Contenedor para la tabla
+    html.H1("Datos recopilados", style={'textAlign': 'center'}),
     html.Div(id='table-container')
 ])
     
@@ -323,13 +320,12 @@ def update_table(institucion):
             {"name": col, "id": col} for col in df.columns
         ],
         data=df.to_dict('records'),
-        style_table={'height': '400px', 'overflowY': 'auto'},  # Ajustar la altura y permitir desplazamiento vertical
+        style_table={'height': '400px', 'overflowY': 'auto'},
         style_cell={'textAlign': 'center', 'padding': '10px'},
         style_header={'backgroundColor': 'lightgray', 'fontWeight': 'bold'},
     )
     
     return table
 
-# Ejecución de la aplicación
 if __name__ == '__main__':
     app.run_server(debug=True)
