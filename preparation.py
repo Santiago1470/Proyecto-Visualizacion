@@ -6,7 +6,12 @@ db.create_tables()
 
 # Cargar los datos
 carga = Cargue()
-institucion = 2712
+# institucion = 2712
+institucion = ["FUNDACION UNIVERSITARIA KONRAD LORENZ",
+                 "UNIVERSIDAD NACIONAL DE COLOMBIA", 
+                "UNIVERSIDAD DE LOS ANDES",
+                "UNIVERSIDAD ANTONIO NARIÑO",
+                "UNIVERSIDAD EXTERNADO DE COLOMBIA"]
 
 # Cargar los DataFrames individuales
 df_admitidos = carga.cargue_archivo(nombre_archivo='ADM-2023.xlsx', hoja=1, encabezado=5, 

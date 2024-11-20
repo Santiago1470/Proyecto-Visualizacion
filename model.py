@@ -182,7 +182,7 @@ class Database:
 
 class Cargue:
     def cargue_archivo(self, nombre_archivo, hoja, encabezado, codigo_institucion, dataset):
-        df = pd.read_excel(nombre_archivo, sheet_name=hoja, header=encabezado)
+        df = pd.read_excel(nombre_archivo, sheet_name=hoja, header=encabezado, dtype={'CÓDIGO DEL DEPARTAMENTO (PROGRAMA)': str})
 
         # Definir las columnas necesarias según el dataset
         if dataset == 'A':
@@ -195,7 +195,8 @@ class Cargue:
             df = df[columnas_requeridas_I]
 
         # Filtrar por código de institución
-        df = df[df['CÓDIGO DE LA INSTITUCIÓN'] == codigo_institucion]
+        # df = df[df['CÓDIGO DE LA INSTITUCIÓN'] == codigo_institucion]
+        df = df[df["INSTITUCIÓN DE EDUCACIÓN SUPERIOR (IES)"].isin(codigo_institucion)]
         
         return df
     

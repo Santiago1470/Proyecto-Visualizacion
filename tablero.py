@@ -14,106 +14,117 @@ def get_db_connection():
     return conn
 
 # Consultas SQL ajustadas al esquema de la base de datos
-query1 = """
-SELECT 
-    a.programaAcademico AS nombre_programa,
-    SUM(h.inscritos) AS total_inscritos,
-    SUM(h.matriculados) AS total_matriculados,
-    SUM(h.admitidos) AS total_admitidos,
-    SUM(h.graduados) AS total_graduados
-FROM TablaHechosSNIES h
-JOIN DimensionAcademica a ON h.idAcademico = a.idAcademico
-WHERE a.nivelEducativo = 'Pregrado'
-GROUP BY a.programaAcademico;
+
+cantidadesPrograma = """
+    SELECT 
+        i.nombreInstitucion as institucion,
+        a.programaAcademico AS nombre_programa,
+        e.genero AS sexo,
+        SUM(h.inscritos) AS inscritos,
+        SUM(h.matriculados) AS matriculados,
+        SUM(h.admitidos) AS admitidos,
+        SUM(h.graduados) AS graduados
+    FROM TablaHechosSNIES h
+    JOIN DimensionInstitucion i ON h.idInstitucion = i.idInstitucion
+    JOIN DimensionAcademica a ON h.idAcademico = a.idAcademico
+    JOIN DimensionEstudiantes e ON h.idEstudiante = e.idEstudiante
+    WHERE a.nivelEducativo = 'Pregrado'
+    GROUP BY i.nombreInstitucion, a.programaAcademico, e.genero;
 """
 
 query2 = """
 SELECT 
+    i.nombreInstitucion as institucion,
     a.nivelEducativo AS nivel_academico,
     a.modalidad,
-    SUM(h.inscritos) AS total_inscritos,
-    SUM(h.matriculados) AS total_matriculados
+    SUM(h.inscritos) AS inscritos,
+    SUM(h.matriculados) AS matriculados,
+    SUM(h.admitidos) AS admitidos,
+    SUM(h.graduados) AS graduados
 FROM TablaHechosSNIES h
-JOIN DimensionAcademica a ON h.idAcademico = a.idAcademico
-GROUP BY a.nivelEducativo, a.modalidad;
-"""
-
-query3 = """
-SELECT 
-    a.programaAcademico AS area_conocimiento,
-    i.tipoInstitucion AS sector_ies,
-    SUM(h.graduados) AS total_graduados
-FROM TablaHechosSNIES h
-JOIN DimensionAcademica a ON h.idAcademico = a.idAcademico
 JOIN DimensionInstitucion i ON h.idInstitucion = i.idInstitucion
-GROUP BY a.programaAcademico, i.tipoInstitucion;
+JOIN DimensionAcademica a ON h.idAcademico = a.idAcademico
+GROUP BY i.nombreInstitucion, a.nivelEducativo, a.modalidad;
 """
 
 query4 = """
 SELECT 
+    i.nombreInstitucion as institucion,
     a.nivelEducativo AS nivel_academico,
     e.genero AS sexo,
-    SUM(h.graduados) AS total_graduados
+    SUM(h.inscritos) AS inscritos,
+    SUM(h.matriculados) AS matriculados,
+    SUM(h.admitidos) AS admitidos,
+    SUM(h.graduados) AS graduados
 FROM TablaHechosSNIES h
+JOIN DimensionInstitucion i ON h.idInstitucion = i.idInstitucion
 JOIN DimensionAcademica a ON h.idAcademico = a.idAcademico
 JOIN DimensionEstudiantes e ON h.idEstudiante = e.idEstudiante
-GROUP BY a.nivelEducativo, e.genero;
-"""
-
-query5 = """
-SELECT 
-    a.nivelEducativo AS nivel_academico,
-    a.programaAcademico AS area_conocimiento,
-    SUM(h.inscritos) AS total_inscritos
-FROM TablaHechosSNIES h
-JOIN DimensionAcademica a ON h.idAcademico = a.idAcademico
-GROUP BY a.nivelEducativo, a.programaAcademico;
-"""
-
-query6 = """
-SELECT 
-    a.programaAcademico AS area_conocimiento,
-    SUM(h.admitidos) AS total_admitidos,
-    SUM(h.graduados) AS total_graduados
-FROM TablaHechosSNIES h
-JOIN DimensionAcademica a ON h.idAcademico = a.idAcademico
-GROUP BY a.programaAcademico;
-"""
-
-query7 = """
-SELECT 
-    a.programaAcademico AS area_conocimiento,
-    d.sexo,
-    SUM(h.graduados) AS total_graduados
-FROM TablaHechosSNIES h
-JOIN DimensionAcademica a ON h.idAcademico = a.idAcademico
-JOIN DimensionDemografica d ON h.idDemografico = d.idDemografico
-GROUP BY a.programaAcademico, d.sexo;
+GROUP BY i.nombreInstitucion, a.nivelEducativo, e.genero;
 """
 
 query_map = """
 SELECT 
+    i.nombreInstitucion as institucion,
     d.codigoDepartamento AS codigo_departamento,
     d.nombreDepartamento AS nombre_departamento,
-    SUM(h.graduados) AS total_graduados
+    SUM(h.inscritos) AS inscritos,
+    SUM(h.matriculados) AS matriculados,
+    SUM(h.admitidos) AS admitidos,
+    SUM(h.graduados) AS graduados
 FROM TablaHechosSNIES h
 JOIN DimensionInstitucion i ON h.idInstitucion = i.idInstitucion
 JOIN DimensionDepartamento d ON i.idInstitucionDpto = d.idDepartamento
-GROUP BY d.codigoDepartamento, d.nombreDepartamento;
+GROUP BY i.nombreInstitucion, d.codigoDepartamento, d.nombreDepartamento;
 """
 # Layout de la aplicación
 app.layout = html.Div([
     html.H1("Proyecto Final - Visualización de Datos Educativos", 
             style={'textAlign': 'center', 'padding': '20px', 'color': '#343a40'}),
     
+    html.Div([
+        # Filtro de Institución
+        html.Div([
+            html.H3("Seleccionar Institución", style={'textAlign': 'center', 'color': '#343a40'}),
+            dcc.Dropdown(
+                id='institucion-dropdown',
+                options=[
+                    {'label': 'FUNDACION UNIVERSITARIA KONRAD LORENZ', 'value': 'FUNDACION UNIVERSITARIA KONRAD LORENZ'},
+                    {'label': "UNIVERSIDAD NACIONAL DE COLOMBIA", 'value': "UNIVERSIDAD NACIONAL DE COLOMBIA"},
+                    {'label': "UNIVERSIDAD DE LOS ANDES", 'value': "UNIVERSIDAD DE LOS ANDES"},
+                    {'label': "UNIVERSIDAD ANTONIO NARIÑO", 'value': 'UNIVERSIDAD ANTONIO NARIÑO'},
+                    {'label': "UNIVERSIDAD EXTERNADO DE COLOMBIA", "value": "UNIVERSIDAD EXTERNADO DE COLOMBIA"}
+                ],
+                value="FUNDACION UNIVERSITARIA KONRAD LORENZ",  # Valor por defecto
+                style={'width': '50%', 'margin': 'auto'}
+            )
+        ], style={'padding': '15px', 'margin': '10px', 'backgroundColor': '#ffffff', 'borderRadius': '10px'}),
+        
+        # Filtro de Estado (Inscritos, Admitidos, Matriculados, Graduados)
+        html.Div([
+            html.H3("Seleccionar Estado", style={'textAlign': 'center', 'color': '#343a40'}),
+            dcc.Dropdown(
+                id='estado-dropdown',
+                options=[
+                    {'label': 'Inscritos', 'value': 'inscritos'},
+                    {'label': 'Admitidos', 'value': 'admitidos'},
+                    {'label': 'Matriculados', 'value': 'matriculados'},
+                    {'label': 'Graduados', 'value': 'graduados'}
+                ],
+                value='matriculados',  # Valor por defecto
+                style={'width': '50%', 'margin': 'auto'}
+            )
+        ], style={'padding': '15px', 'margin': '10px', 'backgroundColor': '#ffffff', 'borderRadius': '10px'})
+    ], style={'padding': '20px', 'backgroundColor': '#f2f2f2'}),
+
     # Primera fila de gráficas
     html.Div([
         html.Div([
-            html.H3("Graduados por Área y Sector", style={'textAlign': 'center', 'color': '#343a40'}),
-            dcc.Graph(id='graduates-area-sector')
+            html.H3("Estudiantes por programa académico y género", style={'textAlign': 'center', 'color': '#343a40'}),
+            dcc.Graph(id='program_geneder')
         ], className='six columns', 
         style={'backgroundColor': '#ffffff', 'padding': '15px', 'borderRadius': '10px'}),
-        
+
         html.Div([
             html.H3("Distribución por Programa Académico", style={'textAlign': 'center', 'color': '#343a40'}),
             dcc.Graph(id='program-distribution')
@@ -124,7 +135,7 @@ app.layout = html.Div([
     # Segunda fila de gráficas
     html.Div([
         html.Div([
-            html.H3("Inscritos y Matriculados por Modalidad y Nivel", style={'textAlign': 'center', 'color': '#343a40'}),
+            html.H3("Según Modalidad y Nivel", style={'textAlign': 'center', 'color': '#343a40'}),
             dcc.Graph(id='level-modality-dist')
         ], className='six columns', 
         style={'backgroundColor': '#ffffff', 'padding': '15px', 'borderRadius': '10px'}),
@@ -135,89 +146,84 @@ app.layout = html.Div([
         ], className='six columns', 
         style={'backgroundColor': '#ffffff', 'padding': '15px', 'borderRadius': '10px'}),
     ], className='row', style={'margin': '10px'}),
-    
-    # Tercera fila de gráficas
-    html.Div([
-        html.Div([
-            html.H3("Admitidos y Graduados por Área", style={'textAlign': 'center', 'color': '#343a40'}),
-            dcc.Graph(id='admitted-graduated-area')
-        ], className='six columns', 
-        style={'backgroundColor': '#ffffff', 'padding': '15px', 'borderRadius': '10px'}),
-        
-        html.Div([
-            html.H3("Inscritos por Área de Conocimiento", style={'textAlign': 'center', 'color': '#343a40'}),
-            dcc.Graph(id='enrollees-knowledge-area')
-        ], className='six columns', 
-        style={'backgroundColor': '#ffffff', 'padding': '15px', 'borderRadius': '10px'}),
-    ], className='row', style={'margin': '10px'}),
-    
-    # Cuarta fila
+
+    # Fila del mapa
     html.Div([
         html.Div([
             html.H3("Número de Graduados por Departamento", style={'textAlign': 'center'}),
             dcc.Graph(id='graduates-map')
         ], className='twelve columns', style={'backgroundColor': 'white', 'padding': '15px', 'borderRadius': '10px'}),
     ], className='row', style={'margin': '10px'}),
+    
 ], style={'backgroundColor': '#f2f2f2', 'padding': '20px'})
 
-# Callback: Gráfica de Graduados por Área y Sector
 @app.callback(
-    Output('graduates-area-sector', 'figure'),
-    Input('graduates-area-sector', 'id')
+    Output('program_geneder', 'figure'),
+    [Input('institucion-dropdown', 'value'),
+     Input('estado-dropdown', 'value')]
 )
-def update_graduates_area_sector(dummy):
+def update_program_gender(institucion, estado):
     conn = get_db_connection()
-    df = pd.read_sql_query(query3, conn)
+    df = pd.read_sql_query(cantidadesPrograma, conn)
     conn.close()
+    
+    df = df[df['institucion'] == institucion]
 
     fig = px.bar(
         df,
-        x='area_conocimiento',
-        y='total_graduados',
-        color='sector_ies',
-        barmode='group',
-        title="Graduados por Área y Sector"
+        x='nombre_programa',
+        y=estado,
+        color='sexo'
+        # title="Graduados por programa académico"
     )
-    fig.update_layout(xaxis_title="Área de Conocimiento", yaxis_title="Total Graduados")
+    fig.update_layout(xaxis_title="Programa Académico", yaxis_title=f"Total {estado}", xaxis=dict(tickangle=-45), height=600)
     return fig
 
-
-# Callback: Distribución por Programa Académico
 @app.callback(
     Output('program-distribution', 'figure'),
-    Input('program-distribution', 'id')
+    [Input('institucion-dropdown', 'value'),
+     Input('estado-dropdown', 'value')]
 )
-def update_program_distribution(dummy):
+def update_program_distribution(institucion, estado):
     conn = get_db_connection()
-    df = pd.read_sql_query(query1, conn)
+    df = pd.read_sql_query(cantidadesPrograma, conn)
     conn.close()
+    
+    df = df[df['institucion'] == institucion]
 
+    # Crear gráfico de pie
     fig = px.pie(
         df,
-        values='total_matriculados',
-        names='nombre_programa',
-        title="Distribución de Matriculados por Programa Académico"
+        values=estado,
+        names='nombre_programa'
+        # title="Distribución por Programa Académico"
     )
+    fig.update_layout(height=600)
+    
     return fig
 
 
 # Callback: Inscritos y Matriculados por Modalidad y Nivel
 @app.callback(
     Output('level-modality-dist', 'figure'),
-    Input('level-modality-dist', 'id')
+    [Input('institucion-dropdown', 'value'),
+    Input('estado-dropdown', 'value')]
 )
-def update_level_modality_distribution(dummy):
+def update_level_modality_distribution(institucion, estado):
     conn = get_db_connection()
     df = pd.read_sql_query(query2, conn)
     conn.close()
-
+    
+    # df = df[df['institucion'] == institucion]
+    df = df[df['modalidad'] != "Sin información"]
+    # print(df)
     fig = px.bar(
         df,
         x='nivel_academico',
-        y=['total_inscritos', 'total_matriculados'],
+        y=estado,
         color='modalidad',
-        barmode='stack',
-        title="Inscritos y Matriculados por Modalidad y Nivel Académico"
+        barmode='stack'
+        # title="Inscritos y Matriculados por Modalidad y Nivel Académico"
     )
     fig.update_layout(xaxis_title="Nivel Académico", yaxis_title="Total")
     return fig
@@ -226,96 +232,71 @@ def update_level_modality_distribution(dummy):
 # Callback: Distribución por Género y Nivel Académico
 @app.callback(
     Output('gender-academic-level', 'figure'),
-    Input('gender-academic-level', 'id')
+    [Input('institucion-dropdown', 'value'),
+    Input('estado-dropdown', 'value')]
 )
-def update_gender_academic_level(dummy):
+def update_gender_academic_level(institucion, estado):
     conn = get_db_connection()
     try:
         df = pd.read_sql_query(query4, conn)
     finally:
         conn.close()
-
+        
+    df = df[df['institucion'] == institucion]
+    df = df[df['nivel_academico'] != "Sin información"]
+    # print(df)
+    # print(estado)
     fig = px.bar(
         df,
         x='nivel_academico',
-        y='total_graduados',
+        y=estado,
         color='sexo',
-        barmode='group',
-        title="Graduados por Género y Nivel Académico"
+        barmode='group'
+        # title="Graduados por Género y Nivel Académico"
     )
     fig.update_layout(xaxis_title="Nivel Académico", yaxis_title="Total Graduados")
     return fig
 
-# Callback: Admitidos y Graduados por Área
-@app.callback(
-    Output('admitted-graduated-area', 'figure'),
-    Input('admitted-graduated-area', 'id')
-)
-def update_admitted_graduated_area(dummy):
-    conn = get_db_connection()
-    df = pd.read_sql_query(query6, conn)
-    conn.close()
-
-    fig = px.scatter(
-        df,
-        x='total_admitidos',
-        y='total_graduados',
-        color='area_conocimiento',
-        size='total_graduados',
-        title="Relación entre Admitidos y Graduados por Área"
-    )
-    fig.update_layout(xaxis_title="Total Admitidos", yaxis_title="Total Graduados")
-    return fig
-
-
-# Callback: Inscritos por Área de Conocimiento
-@app.callback(
-    Output('enrollees-knowledge-area', 'figure'),
-    Input('enrollees-knowledge-area', 'id')
-)
-def update_enrollees_knowledge_area(dummy):
-    conn = get_db_connection()
-    df = pd.read_sql_query(query5, conn)
-    conn.close()
-
-    fig = px.bar(
-        df,
-        x='area_conocimiento',
-        y='total_inscritos',
-        color='nivel_academico',
-        title="Inscritos por Área de Conocimiento y Nivel Académico"
-    )
-    fig.update_layout(xaxis_title="Área de Conocimiento", yaxis_title="Total Inscritos")
-    return fig
-
-
 # Callback: Mapa de Graduados por Departamento
 @app.callback(
     Output('graduates-map', 'figure'),
-    Input('graduates-map', 'id')
+    [Input('institucion-dropdown', 'value'),
+    Input('estado-dropdown', 'value')]
 )
-def update_graduates_map(dummy):
+def update_graduates_map(institucion, estado):
     conn = get_db_connection()
     df = pd.read_sql_query(query_map, conn)
     conn.close()
-
-    # Verificar si 'total_graduados' tiene NaN
-    df['total_graduados'] = df['total_graduados'].fillna(0)
     
+    df = df[df['institucion'] == institucion]
+    
+    print(df)
     # Crear el mapa
     fig = px.choropleth(
         df,
         geojson="https://gist.githubusercontent.com/john-guerra/43c7656821069d00dcbc/raw/be6a6e239cd5b5b803c6e7c2ec405b793a9064dd/Colombia.geo.json",
         locations="codigo_departamento",
-        color="total_graduados",
+        featureidkey="properties.DPTO",
+        color=estado,
         hover_name="nombre_departamento",
-        featureidkey="properties.DPTO",  # Asegúrate de que esta clave sea correcta
-        title="Número de Graduados por Departamento"
+        color_continuous_scale="Jet",
+        labels={estado: estado}
     )
 
-    # Ajustar la visibilidad de los bordes y la proyección para el mapa de Colombia
-    fig.update_geos(fitbounds="geojson", visible=True, projection_type="mercator")
+    fig.update_geos(
+        fitbounds="locations",
+        visible=False
+    )
+
+    fig.update_layout(
+        title_text='Número de Graduados por Departamento en Colombia',
+        coloraxis_colorbar=dict(
+            title="Graduados"
+        )
+    )
     return fig
+
+
 
 # Ejecución de la aplicación
 if __name__ == '__main__':
