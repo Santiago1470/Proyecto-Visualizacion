@@ -115,6 +115,14 @@ app.layout = html.Div([
         ], style={"width": "50%", 'padding': '15px', 'margin': '10px', 'backgroundColor': '#ffffff', 'borderRadius': '10px'})
     ], style={'padding': '20px', 'backgroundColor': '#f2f2f2', "display": "flex", "flex-direction": "row"}),
 
+    # Estadisticas en texto
+    html.Div([
+        html.Div(id='inscritos-text', style={'font-size': '20px', 'margin-top': '10px'}),
+        html.Div(id='graduados-text', style={'font-size': '20px', 'margin-top': '10px'}),
+        html.Div(id='matriculados-text', style={'font-size': '20px', 'margin-top': '10px'}),
+        html.Div(id='admitidos-text', style={'font-size': '20px', 'margin-top': '10px'}),
+    ], style={'padding': '20px', 'backgroundColor': '#f2f2f2', "display": "flex", "flex-direction": "row"}),
+
     # Primera fila de gráficas
     html.Div([
         html.Div([
@@ -192,14 +200,27 @@ def update_program_distribution(institucion, estado):
     df = pd.read_sql_query(cantidadesPrograma, conn)
     conn.close()
     
+    # Filtrar por institución
     df = df[df['institucion'] == institucion]
-
+    
+    # Ordenar por 'estado' y seleccionar los 10 primeros
+    df = df.sort_values(by=estado, ascending=False)
+    top_programs = df.head(10)
+    
+    # Calcular la suma de los valores restantes como "Otros"
+    others_sum = df[estado].iloc[10:].sum()
+    if others_sum > 0:
+        top_programs = pd.concat([
+            top_programs,
+            pd.DataFrame({'nombre_programa': ['Otros'], estado: [others_sum]})
+        ])
+    
     # Crear gráfico de pie
     fig = px.pie(
-        df,
+        top_programs,
         values=estado,
-        names='nombre_programa'
-        # title="Distribución por Programa Académico"
+        names='nombre_programa',
+        title=f"Distribución por Programa Académico ({institucion})"
     )
     fig.update_layout(height=600)
     
@@ -272,7 +293,7 @@ def update_graduates_map(institucion, estado):
     conn.close()
     
     df = df[df['institucion'] == institucion]
-    
+    print(df)
     fig = px.choropleth(
         df,
         geojson="https://gist.githubusercontent.com/john-guerra/43c7656821069d00dcbc/raw/be6a6e239cd5b5b803c6e7c2ec405b793a9064dd/Colombia.geo.json",
@@ -320,6 +341,33 @@ def update_table(institucion):
     )
     
     return table
+
+@app.callback(
+    [Output('inscritos-text', 'children'),
+     Output('graduados-text', 'children'),
+     Output('matriculados-text', 'children'),
+     Output('admitidos-text', 'children')],
+    [Input('institucion-dropdown', 'value')]
+)
+def update_metrics(institucion):
+    conn = get_db_connection()
+    df = pd.read_sql_query(cantidadesPrograma, conn)
+    conn.close()
+
+    if institucion:
+        df = df[df['institucion'] == institucion]
+    
+    total_inscritos = df['inscritos'].sum()
+    total_graduados = df['graduados'].sum()
+    total_matriculados = df['matriculados'].sum()
+    total_admitidos = df['admitidos'].sum()
+    
+    return (
+        f"Total Inscritos: {total_inscritos}",
+        f"Total Graduados: {total_graduados}",
+        f"Total Matriculados: {total_matriculados}",
+        f"Total Admitidos: {total_admitidos}"
+    )
 
 if __name__ == '__main__':
     app.run_server(debug=True)
