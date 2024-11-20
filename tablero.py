@@ -148,7 +148,7 @@ app.layout = html.Div([
     # Fila del mapa
     html.Div([
         html.Div([
-            html.H3("Número de Graduados por Departamento", style={'textAlign': 'center'}),
+            html.H3("Número de estudiantes por Departamento", style={'textAlign': 'center'}),
             dcc.Graph(id='graduates-map')
         ], className='twelve columns', style={'backgroundColor': 'white', 'padding': '15px', 'borderRadius': '10px'}),
     ], className='row', style={'margin': '10px'}),
