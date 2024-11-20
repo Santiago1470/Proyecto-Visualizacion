@@ -6,11 +6,10 @@ import plotly.express as px
 import plotly.graph_objs as go
 import pandas as pd
 import sqlite3
-# Configuración inicial de la aplicación
+
 app = dash.Dash(__name__, external_stylesheets=['https://codepen.io/chriddyp/pen/bWLwgP.css'])
 
 def get_db_connection():
-    # Conexión a la base de datos
     conn = sqlite3.connect('snies.db')
     return conn
 
@@ -76,13 +75,13 @@ JOIN DimensionInstitucion i ON h.idInstitucion = i.idInstitucion
 JOIN DimensionDepartamento d ON i.idInstitucionDpto = d.idDepartamento
 GROUP BY i.nombreInstitucion, d.codigoDepartamento, d.nombreDepartamento;
 """
-# Layout de la aplicación
+
 app.layout = html.Div([
     html.H1("Proyecto Final - Visualización de Datos Educativos", 
             style={'textAlign': 'center', 'padding': '20px', 'color': '#343a40'}),
     
     html.Div([
-        # Filtro de Institución
+        # Filtro por Institución
         html.Div([
             html.H3("Seleccionar Institución", style={'textAlign': 'center', 'color': '#343a40'}),
             dcc.Dropdown(
@@ -94,12 +93,12 @@ app.layout = html.Div([
                     {'label': "UNIVERSIDAD ANTONIO NARIÑO", 'value': 'UNIVERSIDAD ANTONIO NARIÑO'},
                     {'label': "UNIVERSIDAD EXTERNADO DE COLOMBIA", "value": "UNIVERSIDAD EXTERNADO DE COLOMBIA"}
                 ],
-                value="FUNDACION UNIVERSITARIA KONRAD LORENZ",  # Valor por defecto
-                style={'width': '50%', 'margin': 'auto'}
+                value="FUNDACION UNIVERSITARIA KONRAD LORENZ",
+                style={'margin': 'auto'}
             )
-        ], style={'padding': '15px', 'margin': '10px', 'backgroundColor': '#ffffff', 'borderRadius': '10px'}),
+        ], style={"width": "50%", 'padding': '15px', 'margin': '10px', 'backgroundColor': '#ffffff', 'borderRadius': '10px'}),
         
-        # Filtro de Estado (Inscritos, Admitidos, Matriculados, Graduados)
+        # Filtro por Inscritos, Admitidos, Matriculados y Graduados
         html.Div([
             html.H3("Seleccionar Estado", style={'textAlign': 'center', 'color': '#343a40'}),
             dcc.Dropdown(
@@ -110,11 +109,11 @@ app.layout = html.Div([
                     {'label': 'Matriculados', 'value': 'matriculados'},
                     {'label': 'Graduados', 'value': 'graduados'}
                 ],
-                value='matriculados',  # Valor por defecto
-                style={'width': '50%', 'margin': 'auto'}
+                value='matriculados',
+                style={'margin': 'auto'}
             )
-        ], style={'padding': '15px', 'margin': '10px', 'backgroundColor': '#ffffff', 'borderRadius': '10px'})
-    ], style={'padding': '20px', 'backgroundColor': '#f2f2f2'}),
+        ], style={"width": "50%", 'padding': '15px', 'margin': '10px', 'backgroundColor': '#ffffff', 'borderRadius': '10px'})
+    ], style={'padding': '20px', 'backgroundColor': '#f2f2f2', "display": "flex", "flex-direction": "row"}),
 
     # Primera fila de gráficas
     html.Div([
@@ -134,7 +133,7 @@ app.layout = html.Div([
     # Segunda fila de gráficas
     html.Div([
         html.Div([
-            html.H3("Según Modalidad y Nivel", style={'textAlign': 'center', 'color': '#343a40'}),
+            html.H3("Según Modalidad y Nivel Académico (todas las universidades)", style={'textAlign': 'center', 'color': '#343a40'}),
             dcc.Graph(id='level-modality-dist')
         ], className='six columns', 
         style={'backgroundColor': '#ffffff', 'padding': '15px', 'borderRadius': '10px'}),
@@ -156,10 +155,9 @@ app.layout = html.Div([
     
     # Tabla
     html.Div([
-    html.H1("Datos recopilados", style={'textAlign': 'center'}),
-    html.Div(id='table-container')
-])
-    
+        html.H1("Datos recopilados", style={'textAlign': 'center'}),
+        html.Div(id='table-container')
+    ])
 ], style={'backgroundColor': '#f2f2f2', 'padding': '20px'})
 
 @app.callback(
@@ -275,8 +273,6 @@ def update_graduates_map(institucion, estado):
     
     df = df[df['institucion'] == institucion]
     
-    print(df)
-    # Crear el mapa
     fig = px.choropleth(
         df,
         geojson="https://gist.githubusercontent.com/john-guerra/43c7656821069d00dcbc/raw/be6a6e239cd5b5b803c6e7c2ec405b793a9064dd/Colombia.geo.json",
@@ -294,9 +290,9 @@ def update_graduates_map(institucion, estado):
     )
 
     fig.update_layout(
-        title_text='Número de Graduados por Departamento en Colombia',
+        # title_text=f'Número de {estado} por Departamento en Colombia',
         coloraxis_colorbar=dict(
-            title="Graduados"
+            title=estado
         )
     )
     return fig
@@ -310,10 +306,8 @@ def update_table(institucion):
     df = pd.read_sql_query(cantidadesPrograma, conn)
     conn.close()
 
-    if institucion:
-        df = df[df['institucion'] == institucion]
+    df = df[df['institucion'] == institucion]
 
-    # Crear la tabla
     table = dash_table.DataTable(
         id='data-table',
         columns=[
@@ -329,3 +323,7 @@ def update_table(institucion):
 
 if __name__ == '__main__':
     app.run_server(debug=True)
+
+# Hecho por:
+# Óscar Julian Ramirez Contreras
+# Santiago Jair Torres Rivera

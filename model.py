@@ -232,3 +232,7 @@ class Cargue:
         df_final[metricas] = df_final[metricas].fillna(0)
 
         return df_final
+
+# Hecho por:
+# Óscar Julian Ramirez Contreras
+# Santiago Jair Torres Rivera
