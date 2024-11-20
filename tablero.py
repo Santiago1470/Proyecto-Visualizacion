@@ -1,4 +1,5 @@
 import dash
+from dash import dash_table
 from dash import dcc, html
 from dash.dependencies import Input, Output
 import plotly.express as px
@@ -155,6 +156,13 @@ app.layout = html.Div([
         ], className='twelve columns', style={'backgroundColor': 'white', 'padding': '15px', 'borderRadius': '10px'}),
     ], className='row', style={'margin': '10px'}),
     
+    # Tabla
+    html.Div([
+    html.H1("Visualización de Datos Educativos", style={'textAlign': 'center'}),
+    # Contenedor para la tabla
+    html.Div(id='table-container')
+])
+    
 ], style={'backgroundColor': '#f2f2f2', 'padding': '20px'})
 
 @app.callback(
@@ -296,7 +304,31 @@ def update_graduates_map(institucion, estado):
     )
     return fig
 
+@app.callback(
+    Output('table-container', 'children'),
+    Input('institucion-dropdown', 'value')
+)
+def update_table(institucion):
+    conn = get_db_connection()
+    df = pd.read_sql_query(cantidadesPrograma, conn)
+    conn.close()
 
+    if institucion:
+        df = df[df['institucion'] == institucion]
+
+    # Crear la tabla
+    table = dash_table.DataTable(
+        id='data-table',
+        columns=[
+            {"name": col, "id": col} for col in df.columns
+        ],
+        data=df.to_dict('records'),
+        style_table={'height': '400px', 'overflowY': 'auto'},  # Ajustar la altura y permitir desplazamiento vertical
+        style_cell={'textAlign': 'center', 'padding': '10px'},
+        style_header={'backgroundColor': 'lightgray', 'fontWeight': 'bold'},
+    )
+    
+    return table
 
 # Ejecución de la aplicación
 if __name__ == '__main__':
